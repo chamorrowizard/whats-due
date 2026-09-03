@@ -240,19 +240,125 @@
 
     .days-badge.overdue {
       color: var(--danger-color);
-      background: rgba(ff, 71, 87, 0.15);
+      background: rgba(255, 71, 87, 0.15);
     }
 
-    .delete-btn {
+    /* Action Buttons */
+    .task-actions {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .action-btn {
       background: transparent;
-      border: none;
+      border: 1px solid var(--card-border);
       color: var(--text-muted);
+      padding: 4px 10px;
+      border-radius: 4px;
+      font-size: 0.75rem;
       cursor: pointer;
-      font-size: 0.8rem;
+      transition: all 0.2s ease;
     }
 
-    .delete-btn:hover {
+    .action-btn.edit-btn:hover {
+      border-color: var(--accent-color);
+      color: var(--accent-color);
+      background: var(--accent-glow);
+    }
+
+    .action-btn.complete-btn:hover {
+      border-color: var(--danger-color);
       color: var(--danger-color);
+      background: rgba(255, 71, 87, 0.15);
+    }
+
+    .course-tag {
+      color: var(--accent-color);
+      font-weight: 600;
+    }
+
+    /* Modal Styling */
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: rgba(13, 15, 18, 0.85);
+      backdrop-filter: blur(4px);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s ease;
+      z-index: 100;
+    }
+
+    .modal-overlay.active {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .modal-card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 12px;
+      padding: 24px;
+      max-width: 400px;
+      width: 90%;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.8), 0 0 15px var(--accent-glow);
+    }
+
+    .modal-title {
+      font-size: 0.95rem;
+      letter-spacing: 1.5px;
+      color: var(--accent-color);
+      font-weight: bold;
+      margin-bottom: 10px;
+    }
+
+    .modal-message {
+      font-size: 0.85rem;
+      color: var(--text-main);
+      line-height: 1.4;
+      margin-bottom: 20px;
+    }
+
+    .modal-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+    }
+
+    .modal-btn {
+      padding: 8px 16px;
+      border-radius: 6px;
+      font-size: 0.8rem;
+      font-weight: bold;
+      cursor: pointer;
+      border: none;
+    }
+
+    .modal-btn.cancel {
+      background: transparent;
+      color: var(--text-muted);
+      border: 1px solid var(--card-border);
+    }
+
+    .modal-btn.cancel:hover {
+      border-color: var(--text-main);
+      color: var(--text-main);
+    }
+
+    .modal-btn.confirm {
+      background: var(--accent-color);
+      color: #000;
+    }
+
+    .modal-btn.confirm:hover {
+      box-shadow: 0 0 10px var(--accent-glow);
     }
 
     /* Responsive adjustments */
@@ -292,6 +398,8 @@
 
     <!-- Task Input Form -->
     <form class="task-form" id="task-form">
+      <input type="hidden" id="task-id">
+      <div style="font-size: 0.8rem; letter-spacing: 1px; color: var(--accent-color); font-weight: bold; margin-bottom: 4px;" id="form-title">NEW TASK</div>
       <div class="form-group">
         <label for="task-title">Assignment / Exam Title</label>
         <input type="text" id="task-title" placeholder="e.g., Security+ Quiz Ch. 3" required>
@@ -310,7 +418,7 @@
         <label for="task-notes">Notes / Requirements</label>
         <input type="text" id="task-notes" placeholder="e.g., Open note, 30 min limit">
       </div>
-      <button type="submit">Save Task</button>
+      <button type="submit" id="submit-btn">Save Task</button>
     </form>
 
     <!-- Task List -->
@@ -318,15 +426,23 @@
   </div>
 </div>
 
+<!-- Confirmation Modal -->
+<div class="modal-overlay" id="confirm-modal">
+  <div class="modal-card">
+    <div class="modal-title">COMPLETE TASK</div>
+    <div class="modal-message">Are you sure you want to mark this task as completed? This action will remove it from your telemetry dashboard.</div>
+    <div class="modal-actions">
+      <button class="modal-btn cancel" id="cancel-complete-btn">Cancel</button>
+      <button class="modal-btn confirm" id="confirm-complete-btn">Confirm Complete</button>
+    </div>
+  </div>
+</div>
+
 <script>
-  // Initial Academic State stored locally in the browser
-  let tasks = JSON.parse(localStorage.getItem('academic_tasks')) || [
-    
-  ];
-
+  let tasks = JSON.parse(localStorage.getItem('academic_tasks')) || [];
   let currentDate = new Date();
+  let taskToDeleteId = null;
 
-  // Core Logic Functions
   function saveTasks() {
     localStorage.setItem('academic_tasks', JSON.stringify(tasks));
   }
@@ -343,7 +459,6 @@
     const taskListEl = document.getElementById('task-list');
     taskListEl.innerHTML = '';
 
-    // Sort tasks by nearest due date
     tasks.sort((a, b) => new Date(a.date) - new Date(b.date));
 
     tasks.forEach(task => {
@@ -361,11 +476,14 @@
       card.innerHTML = `
         <div class="task-info">
           <div class="task-title">${task.title}</div>
-          <div class="task-details">${task.course} • ${task.date} ${task.notes ? '• ' + task.notes : ''}</div>
+          <div class="task-details"><span class="course-tag">${task.course}</span> • ${task.date} ${task.notes ? '• ' + task.notes : ''}</div>
         </div>
         <div class="task-status">
           <span class="days-badge ${isOverdue ? 'overdue' : ''}">${badgeText}</span>
-          <button class="delete-btn" onclick="deleteTask(${task.id})">Complete / Remove</button>
+          <div class="task-actions">
+            <button class="action-btn edit-btn" onclick="editTask(${task.id})">Edit</button>
+            <button class="action-btn complete-btn" onclick="promptCompleteTask(${task.id})">Complete</button>
+          </div>
         </div>
       `;
       taskListEl.appendChild(card);
@@ -430,35 +548,93 @@
     }
   }
 
-  function deleteTask(id) {
-    tasks = tasks.filter(t => t.id !== id);
-    saveTasks();
-    renderTasks();
+  function editTask(id) {
+    const task = tasks.find(t => t.id === id);
+    if (!task) return;
+
+    document.getElementById('task-id').value = task.id;
+    document.getElementById('task-title').value = task.title;
+    document.getElementById('task-course').value = task.course;
+    document.getElementById('task-date').value = task.date;
+    document.getElementById('task-notes').value = task.notes || '';
+
+    document.getElementById('form-title').textContent = 'EDIT TASK';
+    document.getElementById('submit-btn').textContent = 'Update Task';
+    document.getElementById('task-form').classList.add('active');
+  }
+
+  function resetForm() {
+    const form = document.getElementById('task-form');
+    form.reset();
+    document.getElementById('task-id').value = '';
+    document.getElementById('form-title').textContent = 'NEW TASK';
+    document.getElementById('submit-btn').textContent = 'Save Task';
+    form.classList.remove('active');
+  }
+
+  function promptCompleteTask(id) {
+    taskToDeleteId = id;
+    document.getElementById('confirm-modal').classList.add('active');
+  }
+
+  function closeConfirmModal() {
+    taskToDeleteId = null;
+    document.getElementById('confirm-modal').classList.remove('active');
+  }
+
+  function confirmCompleteTask() {
+    if (taskToDeleteId !== null) {
+      tasks = tasks.filter(t => t.id !== taskToDeleteId);
+      saveTasks();
+      renderTasks();
+    }
+    closeConfirmModal();
   }
 
   // Event Listeners
   document.getElementById('toggle-form-btn').addEventListener('click', () => {
     const form = document.getElementById('task-form');
-    form.classList.toggle('active');
+    if (form.classList.contains('active')) {
+      resetForm();
+    } else {
+      resetForm();
+      form.classList.add('active');
+    }
   });
 
   document.getElementById('task-form').addEventListener('submit', (e) => {
     e.preventDefault();
-    const newTask = {
-      id: Date.now(),
-      title: document.getElementById('task-title').value,
-      course: document.getElementById('task-course').value,
-      date: document.getElementById('task-date').value,
-      notes: document.getElementById('task-notes').value
-    };
-    tasks.push(newTask);
+
+    const idInput = document.getElementById('task-id').value;
+    if (idInput) {
+      const id = parseInt(idInput, 10);
+      const index = tasks.findIndex(t => t.id === id);
+      if (index !== -1) {
+        tasks[index] = {
+          id,
+          title: document.getElementById('task-title').value,
+          course: document.getElementById('task-course').value,
+          date: document.getElementById('task-date').value,
+          notes: document.getElementById('task-notes').value
+        };
+      }
+    } else {
+      tasks.push({
+        id: Date.now(),
+        title: document.getElementById('task-title').value,
+        course: document.getElementById('task-course').value,
+        date: document.getElementById('task-date').value,
+        notes: document.getElementById('task-notes').value
+      });
+    }
+
     saveTasks();
     renderTasks();
-    
-    // Reset and hide form
-    e.target.reset();
-    document.getElementById('task-form').classList.remove('active');
+    resetForm();
   });
+
+  document.getElementById('confirm-complete-btn').addEventListener('click', confirmCompleteTask);
+  document.getElementById('cancel-complete-btn').addEventListener('click', closeConfirmModal);
 
   document.getElementById('prev-month').addEventListener('click', () => {
     currentDate.setMonth(currentDate.getMonth() - 1);
