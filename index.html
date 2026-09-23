@@ -188,6 +188,40 @@
       cursor: pointer;
     }
 
+    /* Date Input Cursor & Alignment Fix */
+    .task-form input[type="date"] {
+      cursor: pointer;
+      color-scheme: dark;
+    }
+
+    /* Button Container inside Form */
+    .form-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+      margin-top: 6px;
+    }
+
+    .form-actions button {
+      padding: 8px 16px;
+      border-radius: 6px;
+      font-weight: bold;
+      font-size: 0.8rem;
+      cursor: pointer;
+    }
+
+    .form-actions .cancel-form-btn {
+      background: transparent;
+      color: var(--text-muted);
+      border: 1px solid var(--card-border);
+      transition: all 0.2s ease;
+    }
+
+    .form-actions .cancel-form-btn:hover {
+      border-color: var(--text-main);
+      color: var(--text-main);
+    }
+
     /* Task Cards */
     .task-list {
       display: flex;
@@ -478,7 +512,10 @@
         <label for="task-notes">Notes / Requirements</label>
         <input type="text" id="task-notes" placeholder="e.g., Open note, 30 min limit">
       </div>
-      <button type="submit" id="submit-btn">Save Task</button>
+      <div class="form-actions">
+        <button type="button" class="cancel-form-btn" id="cancel-form-btn">Cancel</button>
+        <button type="submit" id="submit-btn">Save Task</button>
+      </div>
     </form>
 
     <!-- Task List -->
@@ -731,17 +768,9 @@
     document.getElementById('task-title').value = task.title;
     document.getElementById('task-course').value = task.course;
 
-    // Format date to ISO format YYYY-MM-DD.
+    // Direct string assignment avoids UTC timezone conversion shifts on mobile.
     if (task.date) {
-      const date = new Date(task.date.includes('T') ? task.date : task.date + 'T00:00:00');
-      if (!isNaN(date.getTime())) {
-        const year = date.getFullYear();
-        const month = String(date.getMonth() + 1).padStart(2, '0');
-        const day = String(date.getDate()).padStart(2, '0');
-        document.getElementById('task-date').value = `${year}-${month}-${day}`;
-      } else {
-        document.getElementById('task-date').value = task.date;
-      }
+      document.getElementById('task-date').value = task.date.split('T')[0];
     }
 
     document.getElementById('task-notes').value = task.notes || '';
@@ -780,9 +809,42 @@
   }
 
   // Event Listeners
-  document.getElementById('task-date').addEventListener('click', (e) => {
+  const taskDateInput = document.getElementById('task-date');
+  taskDateInput.addEventListener('click', (e) => {
     if (typeof e.target.showPicker === 'function') {
-      e.target.showPicker();
+      try {
+        e.target.showPicker();
+      } catch (err) {
+        // The browser handles touch focus automatically when picker access is restricted.
+      }
+    }
+  });
+
+  document.getElementById('cancel-form-btn').addEventListener('click', () => {
+    resetForm();
+  });
+
+  document.addEventListener('click', (e) => {
+    const form = document.getElementById('task-form');
+    const toggleBtn = document.getElementById('toggle-form-btn');
+    const isEditBtn = e.target.closest('.edit-btn');
+
+    if (
+      form.classList.contains('active') &&
+      !form.contains(e.target) &&
+      !toggleBtn.contains(e.target) &&
+      !isEditBtn
+    ) {
+      resetForm();
+    }
+  });
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      const form = document.getElementById('task-form');
+      if (form.classList.contains('active')) {
+        resetForm();
+      }
     }
   });
 
