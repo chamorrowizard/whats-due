@@ -240,19 +240,185 @@
 
     .days-badge.overdue {
       color: var(--danger-color);
-      background: rgba(ff, 71, 87, 0.15);
+      background: rgba(255, 71, 87, 0.15);
     }
 
-    .delete-btn {
+    /* Action Buttons */
+    .task-actions {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .action-btn {
       background: transparent;
-      border: none;
+      border: 1px solid var(--card-border);
       color: var(--text-muted);
+      padding: 4px 10px;
+      border-radius: 4px;
+      font-size: 0.75rem;
       cursor: pointer;
-      font-size: 0.8rem;
+      transition: all 0.2s ease;
     }
 
-    .delete-btn:hover {
+    .action-btn.edit-btn:hover {
+      border-color: var(--accent-color);
+      color: var(--accent-color);
+      background: var(--accent-glow);
+    }
+
+    .action-btn.complete-btn:hover {
+      border-color: var(--danger-color);
       color: var(--danger-color);
+      background: rgba(255, 71, 87, 0.15);
+    }
+
+    .course-tag {
+      color: var(--accent-color);
+      font-weight: 600;
+    }
+
+    /* Folder Styling */
+    .folder-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .folder-item {
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid var(--card-border);
+      border-radius: 8px;
+      padding: 12px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      cursor: grab;
+      transition: background 0.2s, border-color 0.2s, transform 0.15s ease;
+    }
+
+    .folder-item:hover {
+      border-color: var(--accent-color);
+      background: rgba(0, 242, 254, 0.03);
+    }
+
+    .folder-item.dragging {
+      opacity: 0.4;
+      cursor: grabbing;
+      border-color: var(--accent-color);
+      box-shadow: 0 0 15px var(--accent-glow);
+    }
+
+    .folder-left {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .drag-handle {
+      color: var(--text-muted);
+      cursor: grab;
+      font-size: 1.1rem;
+      user-select: none;
+    }
+
+    .folder-name {
+      font-weight: 600;
+      font-size: 0.9rem;
+      color: var(--text-main);
+      outline: none;
+      padding: 2px 6px;
+      border-radius: 4px;
+    }
+
+    .folder-name[contenteditable="true"] {
+      background: var(--bg-color);
+      border: 1px solid var(--accent-color);
+      box-shadow: 0 0 6px var(--accent-glow);
+      color: #fff;
+    }
+
+    /* Modal Styling */
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: rgba(13, 15, 18, 0.85);
+      backdrop-filter: blur(4px);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s ease;
+      z-index: 100;
+    }
+
+    .modal-overlay.active {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .modal-card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 12px;
+      padding: 24px;
+      max-width: 400px;
+      width: 90%;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.8), 0 0 15px var(--accent-glow);
+    }
+
+    .modal-title {
+      font-size: 0.95rem;
+      letter-spacing: 1.5px;
+      color: var(--accent-color);
+      font-weight: bold;
+      margin-bottom: 10px;
+    }
+
+    .modal-message {
+      font-size: 0.85rem;
+      color: var(--text-main);
+      line-height: 1.4;
+      margin-bottom: 20px;
+    }
+
+    .modal-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+    }
+
+    .modal-btn {
+      padding: 8px 16px;
+      border-radius: 6px;
+      font-size: 0.8rem;
+      font-weight: bold;
+      cursor: pointer;
+      border: none;
+    }
+
+    .modal-btn.cancel {
+      background: transparent;
+      color: var(--text-muted);
+      border: 1px solid var(--card-border);
+    }
+
+    .modal-btn.cancel:hover {
+      border-color: var(--text-main);
+      color: var(--text-main);
+    }
+
+    .modal-btn.confirm {
+      background: var(--accent-color);
+      color: #000;
+    }
+
+    .modal-btn.confirm:hover {
+      box-shadow: 0 0 10px var(--accent-glow);
     }
 
     /* Responsive adjustments */
@@ -292,6 +458,8 @@
 
     <!-- Task Input Form -->
     <form class="task-form" id="task-form">
+      <input type="hidden" id="task-id">
+      <div style="font-size: 0.8rem; letter-spacing: 1px; color: var(--accent-color); font-weight: bold; margin-bottom: 4px;" id="form-title">NEW TASK</div>
       <div class="form-group">
         <label for="task-title">Assignment / Exam Title</label>
         <input type="text" id="task-title" placeholder="e.g., Security+ Quiz Ch. 3" required>
@@ -310,25 +478,145 @@
         <label for="task-notes">Notes / Requirements</label>
         <input type="text" id="task-notes" placeholder="e.g., Open note, 30 min limit">
       </div>
-      <button type="submit">Save Task</button>
+      <button type="submit" id="submit-btn">Save Task</button>
     </form>
 
     <!-- Task List -->
     <div class="task-list" id="task-list"></div>
   </div>
+
+  <!-- Folders Panel -->
+  <div class="panel">
+    <div class="tasks-header">
+      <div>
+        <h3>FOLDERS</h3>
+        <span style="font-size: 0.75rem; color: var(--text-muted);">DRAG TO REORDER OR DOUBLE CLICK TO EDIT</span>
+      </div>
+      <button class="add-task-btn" id="add-folder-btn">+ Add Folder</button>
+    </div>
+
+    <div class="folder-list" id="folder-list"></div>
+  </div>
+</div>
+
+<!-- Confirmation Modal -->
+<div class="modal-overlay" id="confirm-modal">
+  <div class="modal-card">
+    <div class="modal-title">COMPLETE TASK</div>
+    <div class="modal-message">Are you sure you want to mark this task as completed? This action will remove it from your telemetry dashboard.</div>
+    <div class="modal-actions">
+      <button class="modal-btn cancel" id="cancel-complete-btn">Cancel</button>
+      <button class="modal-btn confirm" id="confirm-complete-btn">Confirm Complete</button>
+    </div>
+  </div>
 </div>
 
 <script>
-  // Initial Academic State stored locally in the browser
-  let tasks = JSON.parse(localStorage.getItem('academic_tasks')) || [
-    
+  let tasks = JSON.parse(localStorage.getItem('academic_tasks')) || [];
+  let folders = JSON.parse(localStorage.getItem('academic_folders')) || [
+    { id: 1, name: 'ENG102 MAIN' },
+    { id: 2, name: '#Notes' },
+    { id: 3, name: 'Tools for your convenience' }
   ];
-
   let currentDate = new Date();
+  let taskToDeleteId = null;
 
-  // Core Logic Functions
   function saveTasks() {
     localStorage.setItem('academic_tasks', JSON.stringify(tasks));
+  }
+
+  function saveFolders() {
+    localStorage.setItem('academic_folders', JSON.stringify(folders));
+  }
+
+  function renderFolders() {
+    const container = document.getElementById('folder-list');
+    container.innerHTML = '';
+
+    folders.forEach((folder, index) => {
+      const el = document.createElement('div');
+      el.className = 'folder-item';
+      el.draggable = true;
+      el.dataset.index = index;
+
+      el.innerHTML = `
+        <div class="folder-left">
+          <span class="drag-handle">⋮⋮</span>
+          <span class="folder-name" id="folder-title-${folder.id}">${folder.name}</span>
+        </div>
+        <div class="task-actions">
+          <button class="action-btn edit-btn" onclick="enableFolderEdit(${folder.id})">Edit</button>
+          <button class="action-btn complete-btn" onclick="deleteFolder(${folder.id})">Delete</button>
+        </div>
+      `;
+
+      el.addEventListener('dragstart', (e) => {
+        el.classList.add('dragging');
+        e.dataTransfer.setData('text/plain', index);
+      });
+
+      el.addEventListener('dragend', () => el.classList.remove('dragging'));
+
+      el.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        const draggingEl = document.querySelector('.dragging');
+        if (!draggingEl || draggingEl === el) return;
+
+        const items = [...container.querySelectorAll('.folder-item')];
+        const nextSibling = items.find(sibling => {
+          return e.clientY <= sibling.getBoundingClientRect().top + sibling.offsetHeight / 2;
+        });
+
+        if (nextSibling) container.insertBefore(draggingEl, nextSibling);
+        else container.appendChild(draggingEl);
+      });
+
+      el.addEventListener('drop', () => {
+        const updatedFolders = [];
+        container.querySelectorAll('.folder-item').forEach(item => {
+          const idx = item.dataset.index;
+          updatedFolders.push(folders[idx]);
+        });
+        folders = updatedFolders;
+        saveFolders();
+        renderFolders();
+      });
+
+      el.addEventListener('dblclick', () => enableFolderEdit(folder.id));
+      container.appendChild(el);
+    });
+  }
+
+  function enableFolderEdit(id) {
+    const nameEl = document.getElementById(`folder-title-${id}`);
+    if (!nameEl) return;
+
+    nameEl.contentEditable = 'true';
+    nameEl.focus();
+
+    const saveEdit = () => {
+      nameEl.contentEditable = 'false';
+      const folder = folders.find(f => f.id === id);
+      if (folder) {
+        folder.name = nameEl.textContent.trim() || folder.name;
+        saveFolders();
+      }
+      renderFolders();
+    };
+
+    nameEl.addEventListener('blur', saveEdit, { once: true });
+    nameEl.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        nameEl.blur();
+      }
+    });
+  }
+
+  function deleteFolder(id) {
+    folders = folders.filter(f => f.id !== id);
+    saveFolders();
+    renderFolders();
   }
 
   function getDaysRemaining(dueDateStr) {
@@ -343,7 +631,6 @@
     const taskListEl = document.getElementById('task-list');
     taskListEl.innerHTML = '';
 
-    // Sort tasks by nearest due date
     tasks.sort((a, b) => new Date(a.date) - new Date(b.date));
 
     tasks.forEach(task => {
@@ -361,11 +648,14 @@
       card.innerHTML = `
         <div class="task-info">
           <div class="task-title">${task.title}</div>
-          <div class="task-details">${task.course} • ${task.date} ${task.notes ? '• ' + task.notes : ''}</div>
+          <div class="task-details"><span class="course-tag">${task.course}</span> • ${task.date} ${task.notes ? '• ' + task.notes : ''}</div>
         </div>
         <div class="task-status">
           <span class="days-badge ${isOverdue ? 'overdue' : ''}">${badgeText}</span>
-          <button class="delete-btn" onclick="deleteTask(${task.id})">Complete / Remove</button>
+          <div class="task-actions">
+            <button class="action-btn edit-btn" onclick="editTask(${task.id})">Edit</button>
+            <button class="action-btn complete-btn" onclick="promptCompleteTask(${task.id})">Complete</button>
+          </div>
         </div>
       `;
       taskListEl.appendChild(card);
@@ -430,35 +720,93 @@
     }
   }
 
-  function deleteTask(id) {
-    tasks = tasks.filter(t => t.id !== id);
-    saveTasks();
-    renderTasks();
+  function editTask(id) {
+    const task = tasks.find(t => t.id === id);
+    if (!task) return;
+
+    document.getElementById('task-id').value = task.id;
+    document.getElementById('task-title').value = task.title;
+    document.getElementById('task-course').value = task.course;
+    document.getElementById('task-date').value = task.date;
+    document.getElementById('task-notes').value = task.notes || '';
+
+    document.getElementById('form-title').textContent = 'EDIT TASK';
+    document.getElementById('submit-btn').textContent = 'Update Task';
+    document.getElementById('task-form').classList.add('active');
+  }
+
+  function resetForm() {
+    const form = document.getElementById('task-form');
+    form.reset();
+    document.getElementById('task-id').value = '';
+    document.getElementById('form-title').textContent = 'NEW TASK';
+    document.getElementById('submit-btn').textContent = 'Save Task';
+    form.classList.remove('active');
+  }
+
+  function promptCompleteTask(id) {
+    taskToDeleteId = id;
+    document.getElementById('confirm-modal').classList.add('active');
+  }
+
+  function closeConfirmModal() {
+    taskToDeleteId = null;
+    document.getElementById('confirm-modal').classList.remove('active');
+  }
+
+  function confirmCompleteTask() {
+    if (taskToDeleteId !== null) {
+      tasks = tasks.filter(t => t.id !== taskToDeleteId);
+      saveTasks();
+      renderTasks();
+    }
+    closeConfirmModal();
   }
 
   // Event Listeners
   document.getElementById('toggle-form-btn').addEventListener('click', () => {
     const form = document.getElementById('task-form');
-    form.classList.toggle('active');
+    if (form.classList.contains('active')) {
+      resetForm();
+    } else {
+      resetForm();
+      form.classList.add('active');
+    }
   });
 
   document.getElementById('task-form').addEventListener('submit', (e) => {
     e.preventDefault();
-    const newTask = {
-      id: Date.now(),
-      title: document.getElementById('task-title').value,
-      course: document.getElementById('task-course').value,
-      date: document.getElementById('task-date').value,
-      notes: document.getElementById('task-notes').value
-    };
-    tasks.push(newTask);
+
+    const idInput = document.getElementById('task-id').value;
+    if (idInput) {
+      const id = parseInt(idInput, 10);
+      const index = tasks.findIndex(t => t.id === id);
+      if (index !== -1) {
+        tasks[index] = {
+          id,
+          title: document.getElementById('task-title').value,
+          course: document.getElementById('task-course').value,
+          date: document.getElementById('task-date').value,
+          notes: document.getElementById('task-notes').value
+        };
+      }
+    } else {
+      tasks.push({
+        id: Date.now(),
+        title: document.getElementById('task-title').value,
+        course: document.getElementById('task-course').value,
+        date: document.getElementById('task-date').value,
+        notes: document.getElementById('task-notes').value
+      });
+    }
+
     saveTasks();
     renderTasks();
-    
-    // Reset and hide form
-    e.target.reset();
-    document.getElementById('task-form').classList.remove('active');
+    resetForm();
   });
+
+  document.getElementById('confirm-complete-btn').addEventListener('click', confirmCompleteTask);
+  document.getElementById('cancel-complete-btn').addEventListener('click', closeConfirmModal);
 
   document.getElementById('prev-month').addEventListener('click', () => {
     currentDate.setMonth(currentDate.getMonth() - 1);
@@ -470,8 +818,17 @@
     renderCalendar();
   });
 
+  document.getElementById('add-folder-btn').addEventListener('click', () => {
+    const newFolder = { id: Date.now(), name: 'New Folder' };
+    folders.push(newFolder);
+    saveFolders();
+    renderFolders();
+    enableFolderEdit(newFolder.id);
+  });
+
   // Initial Load
   renderTasks();
+  renderFolders();
 </script>
 </body>
 </html>
